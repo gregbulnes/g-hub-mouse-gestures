@@ -23,11 +23,17 @@ The default settings below will be for the navigation gestures for in browsers
 ]]--
 
  
--- The button your gestures are mapped to G1 = 1, G2 = 2 etc..
-gestureButtonNumber = 4;
+-- The buttons your gestures are mapped to G1 = 1, G2 = 2 etc..
+-- This is the G-number of the physical button, not the action assigned to it in G HUB.
+-- On an ambidextrous mouse both sides can be assigned "Button 4"/"Button 5" and still
+-- have their own G-number. For the PRO Wireless:
+--   left side:  G4 (rear), G5 (front)
+--   right side: G7 (rear), G8 (front)
+-- (G6 is the DPI button on the bottom.)
+gestureButtonNumbers = {4, 7};
 
--- The button navigation actions are mapped to G1 = 1, G2 = 2 etc..
-navigationButtonNumber = 5;
+-- The buttons navigation actions are mapped to G1 = 1, G2 = 2 etc..
+navigationButtonNumbers = {5, 8};
 
 -- The minimal horizontal/vertical distance your mouse needs to be moved for the gesture to recognize in pixels
 minimalHorizontalMovement = 200;
@@ -53,9 +59,13 @@ debuggingEnabeld = false
 
 -- Event detection
 function OnEvent(event, arg, family)
-	if event == "MOUSE_BUTTON_PRESSED" and (arg == gestureButtonNumber or arg == navigationButtonNumber) then
-		if debuggingEnabeld then OutputLogMessage("\nEvent: " .. event .. " for button: " .. arg .. "\n") end
-		
+	-- Logged for every mouse button, also the ones that are not mapped, so you can look up the number of a button
+	if debuggingEnabeld and (event == "MOUSE_BUTTON_PRESSED" or event == "MOUSE_BUTTON_RELEASED") then
+		OutputLogMessage("\nEvent: " .. event .. " for button: " .. arg .. "\n")
+	end
+
+	if event == "MOUSE_BUTTON_PRESSED" and (isGestureButton(arg) or isNavigationButton(arg)) then
+
 		-- Get stating mouse posistion
 		horizontalStartingPosistion, verticalStartingPosistion = GetMousePosition()
 		
@@ -65,9 +75,8 @@ function OnEvent(event, arg, family)
 		end
 	end
 
-	if event == "MOUSE_BUTTON_RELEASED" and (arg == gestureButtonNumber or arg == navigationButtonNumber) then
-		if debuggingEnabeld then OutputLogMessage("\nEvent: " .. event .. " for button: " .. arg .. "\n") end
-		
+	if event == "MOUSE_BUTTON_RELEASED" and (isGestureButton(arg) or isNavigationButton(arg)) then
+
 		-- Get ending mouse posistion
 		horizontalEndingPosistion, verticalEndingPosistion = GetMousePosition()
 		
@@ -92,7 +101,7 @@ end
 function mouseMovedUp(buttonNumber)
 	if debuggingEnabeld then OutputLogMessage("mouseMovedUp\n") end
 	
-	if buttonNumber == gestureButtonNumber and missionControlEnabled then 
+	if isGestureButton(buttonNumber) and missionControlEnabled then 
 		performMissionControlGesture()
 	end
 end
@@ -100,7 +109,7 @@ end
 function mouseMovedDown(buttonNumber)
 	if debuggingEnabeld then OutputLogMessage("mouseMovedDown\n") end
 	
-	if buttonNumber == gestureButtonNumber and applicationWindowsEnabled then 
+	if isGestureButton(buttonNumber) and applicationWindowsEnabled then 
 		performApplicationWindowsGesture()
 	end
 end
@@ -108,10 +117,10 @@ end
 function mouseMovedLeft(buttonNumber)
 	if debuggingEnabeld then OutputLogMessage("mouseMovedLeft\n") end
 	
-	if buttonNumber == gestureButtonNumber and moveBetweenSpacesEnabled then 
+	if isGestureButton(buttonNumber) and moveBetweenSpacesEnabled then 
 		performSwipeLeftGesture()
 	end
-	if buttonNumber == navigationButtonNumber and browserNavigationEnabled then 
+	if isNavigationButton(buttonNumber) and browserNavigationEnabled then 
 		performNextPageGesture()
 	end
 end
@@ -119,10 +128,10 @@ end
 function mouseMovedRight(buttonNumber)
 	if debuggingEnabeld then OutputLogMessage("mouseMovedRight\n") end
 	
-	if buttonNumber == gestureButtonNumber and moveBetweenSpacesEnabled then 
+	if isGestureButton(buttonNumber) and moveBetweenSpacesEnabled then 
 		performSwipeRightGesture()
 	end
-	if buttonNumber == navigationButtonNumber and browserNavigationEnabled then 
+	if isNavigationButton(buttonNumber) and browserNavigationEnabled then 
 		performPreviousPageGesture()
 	end
 end
@@ -172,6 +181,21 @@ function performPreviousPageGesture()
 end
 
 -- Helper Functions
+function isGestureButton(buttonNumber)
+	return listContains(gestureButtonNumbers, buttonNumber)
+end
+
+function isNavigationButton(buttonNumber)
+	return listContains(navigationButtonNumbers, buttonNumber)
+end
+
+function listContains(list, value)
+	for _, item in ipairs(list) do
+		if item == value then return true end
+	end
+	return false
+end
+
 function pressTwoKeys(firstKey, secondKey)
 	PressKey(firstKey)
 	Sleep(delay)
